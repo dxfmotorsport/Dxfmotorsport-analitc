@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DXF Analytics — Panel de Análisis</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    :root {
+      --bg:       #0a0a0f;
+      --surface:  #111118;
+      --border:   #1e1e2e;
+      --accent:   #e63946;
+      --accent2:  #ff6b35;
+      --text:     #e8e8f0;
+      --muted:    #6b6b80;
+      --green:    #2ecc71;
+      --yellow:   #f39c12;
+      --red:      #e74c3c;
+      --mono:     'JetBrains Mono', monospace;
+      --sans:     'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-mark {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      clip-path: polygon(0 0, 100% 0, 100% 70%, 70% 100%, 0 100%);
+    }
+    .logo-text { font-size: 14px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+    .logo-text span { color: var(--accent); }
+
+    .badge {
+      font-family: var(--mono); font-size: 10px;
+      background: rgba(230,57,70,0.15); color: var(--accent);
+      border: 1px solid rgba(230,57,70,0.3);
+      padding: 3px 8px; border-radius: 3px; letter-spacing: 0.05em;
+    }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+    .config-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 24px; margin-bottom: 32px;
+    }
+    .config-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 16px;
+    }
+    .config-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 16px; margin-bottom: 20px;
+    }
+    @media (max-width: 600px) { .config-grid { grid-template-columns: 1fr; } }
+
+    label {
+      display: block; font-size: 11px; font-weight: 500;
+      color: var(--muted); letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 6px;
+    }
+    input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      color: var(--text); font-family: var(--mono); font-size: 12px;
+      padding: 10px 12px; border-radius: 5px; outline: none; transition: border-color 0.2s;
+    }
+    input:focus { border-color: var(--accent); }
+    input::placeholder { color: var(--muted); }
+
+    .btn-primary {
+      background: var(--accent); color: white; border: none;
+      padding: 12px 28px; font-family: var(--sans); font-size: 13px;
+      font-weight: 600; letter-spacing: 0.05em; border-radius: 5px;
+      cursor: pointer; transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary:hover:not(:disabled) { background: #c1121f; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .loading { display: none; align-items: center; gap: 12px; padding: 20px 0; color: var(--muted); font-size: 13px; }
+    .loading.active { display: flex; }
+    .spinner {
+      width: 20px; height: 20px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px; margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 20px; position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: var(--accent);
+    }
+    .stat-value { font-family: var(--mono); font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 6px; }
+    .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    .issues-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .issue-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .issue-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .issue-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-red { background: var(--red); }
+    .dot-yellow { background: var(--yellow); }
+    .dot-green { background: var(--green); }
+    .issue-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .issue-count { font-family: var(--mono); font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+    .issue-list { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+    .analysis-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .analysis-header {
+      padding: 16px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .analysis-title { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .analysis-timestamp { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+    .analysis-content { padding: 24px; line-height: 1.8; font-size: 14px; }
+    .analysis-content h2 {
+      font-size: 15px; font-weight: 700; margin: 28px 0 12px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--border); letter-spacing: 0.03em;
+    }
+    .analysis-content h2:first-child { margin-top: 0; }
+    .analysis-content p { color: #b0b0c0; margin-bottom: 12px; }
+    .analysis-content ul, .analysis-content ol { padding-left: 20px; margin-bottom: 12px; }
+    .analysis-content li { color: #b0b0c0; margin-bottom: 6px; }
+    .analysis-content strong { color: var(--text); font-weight: 600; }
+
+    .top-products { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+    .top-products-header { padding: 14px 20px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .product-row { display: flex; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border); gap: 16px; }
+    .product-row:last-child { border-bottom: none; }
+    .product-rank { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 20px; text-align: center; }
+    .product-name { flex: 1; font-size: 13px; }
+    .product-units { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; }
+    .bar-wrap { width: 80px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+
+    .hidden { display: none !important; }
+    .error-msg {
+      background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3);
+      color: #e74c3c; padding: 14px 18px; border-radius: 6px; font-size: 13px; margin-top: 16px;
+    }
+    .save-notice { font-size: 11px; color: var(--muted); margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text"><span>DXF</span> Analytics</div>
+  </div>
+  <span class="badge">BETA</span>
+</header>
+
+<main>
+  <div class="config-panel">
+    <div class="config-title">Configuración de conexión</div>
+    <div class="config-grid">
+      <div>
+        <label>URL de tu tienda Shopify</label>
+        <input type="text" id="shopifyStore" placeholder="dxfmotorsport.myshopify.com" />
+      </div>
+      <div>
+        <label>URL de tu backend en Vercel</label>
+        <input type="text" id="backendUrl" placeholder="https://dxf-analytics.vercel.app" />
+      </div>
+    </div>
+    <button class="btn-primary" id="analyzeBtn" onclick="runAnalysis()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Analizar tienda
+    </button>
+    <div class="save-notice">La configuración se guarda en tu navegador.</div>
+    <div class="error-msg hidden" id="errorMsg"></div>
+  </div>
+
+  <div class="loading" id="loadingEl">
+    <div class="spinner"></div>
+    <span>Analizando tu tienda con IA... puede tardar hasta 30 segundos</span>
+  </div>
+
+  <div id="results" class="hidden">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="issues-row" id="issuesRow"></div>
+    <div class="top-products hidden" id="topProductsPanel">
+      <div class="top-products-header">Productos más vendidos</div>
+      <div id="topProductsList"></div>
+    </div>
+    <div class="analysis-panel">
+      <div class="analysis-header">
+        <span class="analysis-title">Informe IA — Análisis completo</span>
+        <span class="analysis-timestamp" id="timestamp"></span>
+      </div>
+      <div class="analysis-content" id="analysisContent"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  window.onload = () => {
+    const store = localStorage.getItem('dxf_store');
+    const backend = localStorage.getItem('dxf_backend');
+    if (store) document.getElementById('shopifyStore').value = store;
+    if (backend) document.getElementById('backendUrl').value = backend;
+  };
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
+  function hideError() {
+    document.getElementById('errorMsg').classList.add('hidden');
+  }
+
+  function renderMarkdown(text) {
+    return text
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^\- (.+)$/gm, '<li>$1</li>')
+      .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+      .replace(/(<li>[\s\S]+?<\/li>)/g, '<ul>$1</ul>')
+      .replace(/<\/ul>\s*<ul>/g, '')
+      .split('\n').map(line => {
+        if (!line.startsWith('<')) return line ? `<p>${line}</p>` : '';
+        return line;
+      }).join('');
+  }
+
+  async function runAnalysis() {
+    hideError();
+    const store = document.getElementById('shopifyStore').value.trim();
+    const backend = document.getElementById('backendUrl').value.trim();
+
+    if (!store || !backend) {
+      showError('Rellena la URL de tu tienda y la URL del backend en Vercel.');
+      return;
+    }
+
+    localStorage.setItem('dxf_store', store);
+    localStorage.setItem('dxf_backend', backend);
+
+    const btn = document.getElementById('analyzeBtn');
+    btn.disabled = true;
+    document.getElementById('loadingEl').classList.add('active');
+    document.getElementById('results').classList.add('hidden');
+
+    try {
+      const apiUrl = backend.replace(/\/$/, '') + '/api/analyze';
+      const res = await fetch(apiUrl, { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Error del servidor: ${res.status}`);
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Error desconocido');
+      renderResults(data);
+    } catch (err) {
+      showError('Error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      document.getElementById('loadingEl').classList.remove('active');
+    }
+  }
+
+  function renderResults(data) {
+    const { storeData, analysis, generatedAt } = data;
+    const s = storeData.summary;
+
+    document.getElementById('statsGrid').innerHTML = [
+      { value: s.totalProducts, label: 'Productos' },
+      { value: s.totalOrders, label: 'Pedidos' },
+      { value: s.totalCustomers, label: 'Clientes' },
+      { value: '€' + Number(s.totalRevenue).toLocaleString('es-ES', {minimumFractionDigits:2}), label: 'Ingresos totales' },
+      { value: s.newCustomers, label: 'Clientes nuevos' },
+      { value: s.returningCustomers, label: 'Recurrentes' },
+    ].map(i => `<div class="stat-card"><div class="stat-value">${i.value}</div><div class="stat-label">${i.label}</div></div>`).join('');
+
+    const issues = storeData.issues;
+    document.getElementById('issuesRow').innerHTML = [
+      { dot: 'dot-red', title: 'Sin imágenes', count: issues.productsWithoutImages.length, list: issues.productsWithoutImages.slice(0,3).join(', ') || 'Ninguno' },
+      { dot: 'dot-yellow', title: 'Sin descripción', count: issues.productsWithoutDescription.length, list: issues.productsWithoutDescription.slice(0,3).join(', ') || 'Ninguno' },
+      { dot: issues.draftProducts.length > 0 ? 'dot-yellow' : 'dot-green', title: 'En borrador', count: issues.draftProducts.length, list: issues.draftProducts.slice(0,3).join(', ') || 'Ninguno' },
+    ].map(i => `<div class="issue-card"><div class="issue-header"><div class="issue-dot ${i.dot}"></div><div class="issue-title">${i.title}</div></div><div class="issue-count">${i.count}</div><div class="issue-list">${i.list}</div></div>`).join('');
+
+    if (storeData.topProducts && storeData.topProducts.length > 0) {
+      const maxUnits = storeData.topProducts[0][1];
+      document.getElementById('topProductsList').innerHTML = storeData.topProducts.map(([name, units], i) =>
+        `<div class="product-row"><div class="product-rank">${i+1}</div><div class="product-name">${name}</div><div class="bar-wrap"><div class="bar-fill" style="width:${(units/maxUnits*100).toFixed(0)}%"></div></div><div class="product-units">${units} uds</div></div>`
+      ).join('');
+      document.getElementById('topProductsPanel').classList.remove('hidden');
+    }
+
+    document.getElementById('analysisContent').innerHTML = renderMarkdown(analysis);
+    document.getElementById('timestamp').textContent = new Date(generatedAt).toLocaleString('es-ES');
+    document.getElementById('results').classList.remove('hidden');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
