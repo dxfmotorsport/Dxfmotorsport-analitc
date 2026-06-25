@@ -1,0 +1,11 @@
+{
+  "name": "dxf-analytics",
+  "version": "1.0.0",
+  "description": "DXFMotorsport - Panel de análisis IA para Shopify",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  }
+}
